@@ -87,13 +87,20 @@ class APITests(TestCase):
 
     def test_post_success(self):
         test_file = self.get_random_test_file()
+        second_test_file = self.get_random_test_file(test_file['directory'])
         self.assertEqual(
             self.client.post(
                 '/' + '/'.join(test_file['directory']),
-                data={'files': (BytesIO(test_file['content']), test_file['name'])}
+                data={
+                    'files': [
+                        (BytesIO(test_file['content']), test_file['name']),
+                        (BytesIO(second_test_file['content']), second_test_file['name'])
+                    ]
+                }
             ).status_code,
             201
         )
+        self.check_a_test_file(second_test_file)
         self.check_a_test_file(test_file)
         rmtree(test_file['root_path'])
 
