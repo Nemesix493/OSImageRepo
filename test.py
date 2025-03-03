@@ -40,7 +40,6 @@ class APITests(TestCase):
             directory: list[str] | None = None,
             name: str | None = None,
             content: bytes | None = None):
-        
         test_file = {
             'directory': directory,
             'name': name,
@@ -125,3 +124,41 @@ class APITests(TestCase):
         self.check_a_test_file(test_file)
         self.assertFalse(another_test_file['path'].exists())
         rmtree(test_file['directory_path'])
+
+    def test_patch_success(self):
+        test_file = self.get_random_test_file()
+        makedirs(test_file['directory_path'])
+        with open(test_file['path'], 'wb+') as file:
+            file.write(test_file['content'])
+        new_test_file = self.get_random_test_file(test_file['directory'])
+        test_file['content'] = randbytes(9)
+        self.assertEqual(
+            self.client.patch(
+                '/' + '/'.join(test_file['directory']),
+                data={
+                    'files': [
+                        (BytesIO(test_file['content']), test_file['name']),
+                        (BytesIO(new_test_file['content']), new_test_file['name'])
+                    ]
+                }
+            ).status_code,
+            200
+        )
+        self.check_a_test_file(test_file)
+        self.check_a_test_file(new_test_file)
+        rmtree(test_file['directory_path'])
+
+    def test_patch_error(self):
+        test_file = self.get_random_test_file()
+        self.assertEqual(
+            self.client.patch(
+                '/' + '/'.join(test_file['directory']),
+                data={
+                    'files': [
+                        (BytesIO(test_file['content']), test_file['name']),
+                    ]
+                }
+            ).status_code,
+            400
+        )
+        self.assertFalse(test_file['root_path'].exists())
