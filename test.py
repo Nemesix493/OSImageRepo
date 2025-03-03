@@ -3,6 +3,8 @@ from unittest import TestCase
 from io import BytesIO
 from os import makedirs
 from shutil import rmtree
+from random import randbytes, choices
+from string import ascii_letters, digits
 
 from api import app
 
@@ -17,17 +19,6 @@ class APITests(TestCase):
             "TESTING": True,
             "UPLOAD_PATH": cls.test_upload_path
         })
-        cls.test_file = {
-            'directory': 'test/test',
-            'name': 'test_file.txt',
-            'content': b"test_test",
-            'root': 'test'
-        }
-        cls.test_file['root_path'] = (cls.test_upload_path / cls.test_file['root']).resolve()
-        cls.test_file['path'] = (
-            cls.test_upload_path / cls.test_file['directory'] / cls.test_file['name']
-        ).resolve()
-        cls.test_file['directory_path'] = (cls.test_upload_path / cls.test_file['directory']).resolve()
         cls.client = app.test_client()
         return super().setUpClass()
 
@@ -35,6 +26,46 @@ class APITests(TestCase):
     def tearDownClass(cls):
         rmtree(cls.test_upload_path)
         return super().tearDownClass()
+
+    # Helpers methods
+
+    def get_random_name(self):
+        return ''.join(choices(
+            ascii_letters + digits,
+            k=5
+        ))
+
+    def get_random_test_file(
+            self,
+            directory: list[str] | None = None,
+            name: str | None = None,
+            content: bytes | None = None):
+        
+        test_file = {
+            'directory': directory,
+            'name': name,
+            'content': content
+        }
+        if directory is None:
+            test_file['directory'] = [self.get_random_name() for i in range(3)]
+        if name is None:
+            test_file['name'] = self.get_random_name() + '.txt'
+        if content is None:
+            test_file['content'] = randbytes(10)
+        test_file['root_path'] = (self.test_upload_path / test_file['directory'][0]).resolve()
+        test_file['directory_path'] = (self.test_upload_path / '/'.join(test_file['directory'])).resolve()
+        test_file['path'] = (test_file['directory_path'] / test_file['name']).resolve()
+        return test_file
+
+    def check_a_test_file(self, test_file):
+        self.assertTrue(
+            test_file['path'].exists()
+        )
+        with open(test_file['path'], 'rb') as f:
+            file_content = f.read()
+        self.assertEqual(file_content, test_file['content'])
+
+    # Tests methods
 
     def test_get_error(self):
         self.assertEqual(
@@ -54,41 +85,36 @@ class APITests(TestCase):
             405
         )
 
-    def check_a_test_file(self, test_file):
-        self.assertTrue(
-            test_file['path'].exists()
-        )
-        with open(test_file['path'], 'rb') as f:
-            file_content = f.read()
-        self.assertEqual(file_content, test_file['content'])
-
     def test_post_success(self):
+        test_file = self.get_random_test_file()
         self.assertEqual(
             self.client.post(
-                '/' + self.test_file['directory'],
-                data={'files': (BytesIO(self.test_file['content']), self.test_file['name'])}
+                '/' + '/'.join(test_file['directory']),
+                data={'files': (BytesIO(test_file['content']), test_file['name'])}
             ).status_code,
             201
         )
-        self.check_a_test_file(self.test_file)
-        rmtree((self.test_upload_path / self.test_file['root']))
+        self.check_a_test_file(test_file)
+        rmtree(test_file['root_path'])
 
     def test_post_error(self):
-        makedirs(self.test_file['directory_path'])
-        with open(self.test_file['path'], 'wb+') as file:
-            file.write(self.test_file['content'])
+        test_file = self.get_random_test_file()
+        makedirs(test_file['directory_path'])
+        with open(test_file['path'], 'wb+') as file:
+            file.write(test_file['content'])
+        another_test_file = self.get_random_test_file(test_file['directory'])
         self.assertEqual(
             self.client.post(
-                '/' + self.test_file['directory'],
+                '/' + '/'.join(test_file['directory']),
                 data={
                     'files': [
-                        (BytesIO(self.test_file['content']), self.test_file['name']),
-                        (BytesIO(b"some other data"), "another_file.txt")
+                        (BytesIO(test_file['content']), test_file['name']),
+                        (BytesIO(another_test_file['content']), another_test_file['name'])
                     ]
                 }
             ).status_code,
             400
         )
-        self.check_a_test_file(self.test_file)
-        self.assertFalse((self.test_file['directory_path'] / "another_file.txt").resolve().exists())
-        rmtree((self.test_upload_path / self.test_file['root']))
+        self.check_a_test_file(test_file)
+        self.assertFalse(another_test_file['path'].exists())
+        rmtree(test_file['directory_path'])
