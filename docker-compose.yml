@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  flask-app:
+    build:
+      context: .
+    container_name: flask-os-image-repo
+    restart: on-failure
+    networks:
+      private_net_image_repo:
+        aliases:
+          - flask
+    volumes:
+      - image_data_vol:/data
+
+  nginx:
+    image: nginx
+    container_name: nginx-os-image-repo
+    restart: on-failure
+    networks:
+      private_net_image_repo:
+        aliases:
+          - nginx
+      public_net_image_repo:
+        aliases:
+          - os-image-repo
+    volumes:
+      - image_data_vol:/usr/share/nginx/html/data/
+      - nginx_conf_vol:/etc/nginx/conf.d/
+      - nginx_logs_vol:/var/log/nginx/logs/
+    ports:
+      - "9090:8080"
+    depends_on:
+      - flask-app
+
+networks:
+  private_net_image_repo:
+    driver: bridge
+    internal: true
+  public_net_image_repo:
+    driver: bridge
+
+volumes:
+  image_data_vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/
+  nginx_conf_vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./nginx/conf/
+  nginx_logs_vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./nginx/logs/

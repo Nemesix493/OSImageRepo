@@ -1,4 +1,9 @@
+.git/
 env/
 **/__pycache__/
 .gitignore
 Dockerfile
+data/
+nginx/
+docker-compose.yml
+.dockerignore
