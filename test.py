@@ -72,7 +72,7 @@ class APITests(TestCase):
         # On none existing directory
         response = self.client.get(f'/{"/".join(test_file["directory"])}/')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers['X-Accel-Redirect'], f'/files/{"/".join(test_file["directory"])}')
+        self.assertEqual(response.headers['X-Accel-Redirect'], f'/files/{"/".join(test_file["directory"])}/')
 
         # On none existing file
         response = self.client.get(f'/{"/".join(test_file["directory"])}/{test_file["name"]}')
