@@ -68,18 +68,20 @@ class APITests(TestCase):
 
     def test_get_success(self):
         test_file = self.get_random_test_file()
+        directory_url = f'/{"/".join(test_file["directory"])}/'
+        file_url = f'/{"/".join(test_file["directory"])}/{test_file["name"]}'
 
         # On none existing directory
-        response = self.client.get(f'/{"/".join(test_file["directory"])}/')
+        response = self.client.get(directory_url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers['X-Accel-Redirect'], f'/files/{"/".join(test_file["directory"])}/')
+        self.assertEqual(response.headers['X-Accel-Redirect'], '/files' + directory_url)
 
         # On none existing file
-        response = self.client.get(f'/{"/".join(test_file["directory"])}/{test_file["name"]}')
+        response = self.client.get(file_url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.headers['X-Accel-Redirect'],
-            f'/files/{"/".join(test_file["directory"])}/{test_file["name"]}'
+            '/files' + file_url
         )
 
         makedirs(test_file['directory_path'])
@@ -87,16 +89,16 @@ class APITests(TestCase):
             file.write(test_file['content'])
 
         # On existing directory
-        response = self.client.get(f'/{"/".join(test_file["directory"])}/')
+        response = self.client.get(directory_url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.headers['X-Accel-Redirect'], f'/files/{"/".join(test_file["directory"])}/')
+        self.assertEqual(response.headers['X-Accel-Redirect'], '/files' + directory_url)
 
         # On none existing file
-        response = self.client.get(f'/{"/".join(test_file["directory"])}/{test_file["name"]}')
+        response = self.client.get(file_url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.headers['X-Accel-Redirect'],
-            f'/files/{"/".join(test_file["directory"])}/{test_file["name"]}'
+            '/files' + file_url
         )
 
         # On root url
