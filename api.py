@@ -22,13 +22,14 @@ def is_in_upload_path(resolved_path: Path) -> bool:
 
 @app.route("/<path:dir_path>", methods=['GET', 'POST', 'PATCH'])
 def upload(dir_path):
+    if request.method == 'GET':
+        return get_views(dir_path)
     resolved_dir_path = current_app.config['UPLOAD_PATH'] / dir_path
     if not (is_safe_path(dir_path) and is_in_upload_path(resolved_dir_path)):
         return jsonify({'error_message': 'not valid path'}), 400
     func_method = {
         'POST': upload_post,
         'PATCH': upload_patch,
-        'GET': upload_get
     }
     return func_method[request.method](resolved_dir_path)
 
@@ -53,20 +54,14 @@ def upload_patch(resolved_dir_path: Path):
     return jsonify({'message': 'Successfully updated'}), 200
 
 
-def upload_get(resolved_dir_path: Path):
-    file_path = resolved_dir_path.relative_to(current_app.config['UPLOAD_PATH'])
+def get_views(view_path=None):
+    redirect_path = '/files/'
+    if view_path is not None:
+        redirect_path += view_path
     response = Response(status=200)
-    if resolved_dir_path.is_dir():
-        response.headers['X-Accel-Redirect'] = f'/files/{file_path}/'
-    else:
-        response.headers['X-Accel-Redirect'] = f'/files/{file_path}'
+    response.headers['X-Accel-Redirect'] = redirect_path
     del response.headers['Content-Type']
     return response
 
 
-@app.route('/')
-def root():
-    response = Response(status=200)
-    response.headers['X-Accel-Redirect'] = '/files/'
-    del response.headers['Content-Type']
-    return response
+app.route('/')(get_views)
