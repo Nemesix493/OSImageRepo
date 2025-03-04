@@ -66,11 +66,48 @@ class APITests(TestCase):
 
     # Tests methods
 
-    def test_get_error(self):
+    def test_get_success(self):
+        test_file = self.get_random_test_file()
+
+        # On none existing directory
+        response = self.client.get(f'/{"/".join(test_file["directory"])}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['X-Accel-Redirect'], f'/files/{"/".join(test_file["directory"])}')
+
+        # On none existing file
+        response = self.client.get(f'/{"/".join(test_file["directory"])}/{test_file["name"]}')
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            self.client.get('/test/').status_code,
-            405
+            response.headers['X-Accel-Redirect'],
+            f'/files/{"/".join(test_file["directory"])}/{test_file["name"]}'
         )
+
+        makedirs(test_file['directory_path'])
+        with open(test_file['path'], 'wb+') as file:
+            file.write(test_file['content'])
+
+        # On existing directory
+        response = self.client.get(f'/{"/".join(test_file["directory"])}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers['X-Accel-Redirect'], f'/files/{"/".join(test_file["directory"])}/')
+
+        # On none existing file
+        response = self.client.get(f'/{"/".join(test_file["directory"])}/{test_file["name"]}')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers['X-Accel-Redirect'],
+            f'/files/{"/".join(test_file["directory"])}/{test_file["name"]}'
+        )
+
+        # On root url
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers['X-Accel-Redirect'],
+            '/files/'
+        )
+
+        rmtree(test_file['directory_path'])
 
     def test_put_error(self):
         self.assertEqual(
