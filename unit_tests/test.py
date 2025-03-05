@@ -130,10 +130,8 @@ class APITests(TestCase):
             self.client.post(
                 '/' + '/'.join(test_file['directory']),
                 data={
-                    'files': [
-                        (BytesIO(test_file['content']), test_file['name']),
-                        (BytesIO(second_test_file['content']), second_test_file['name'])
-                    ]
+                    'file_0': (BytesIO(test_file['content']), test_file['name']),
+                    'file_1': (BytesIO(second_test_file['content']), second_test_file['name'])
                 }
             ).status_code,
             201
@@ -152,10 +150,8 @@ class APITests(TestCase):
             self.client.post(
                 '/' + '/'.join(test_file['directory']),
                 data={
-                    'files': [
-                        (BytesIO(test_file['content']), test_file['name']),
-                        (BytesIO(another_test_file['content']), another_test_file['name'])
-                    ]
+                    'file_0': (BytesIO(test_file['content']), test_file['name']),
+                    'file_1': (BytesIO(another_test_file['content']), another_test_file['name'])
                 }
             ).status_code,
             400
@@ -175,10 +171,8 @@ class APITests(TestCase):
             self.client.patch(
                 '/' + '/'.join(test_file['directory']),
                 data={
-                    'files': [
-                        (BytesIO(test_file['content']), test_file['name']),
-                        (BytesIO(new_test_file['content']), new_test_file['name'])
-                    ]
+                    'file_0': (BytesIO(test_file['content']), test_file['name']),
+                    'file_1': (BytesIO(new_test_file['content']), new_test_file['name'])
                 }
             ).status_code,
             200
@@ -193,9 +187,7 @@ class APITests(TestCase):
             self.client.patch(
                 '/' + '/'.join(test_file['directory']),
                 data={
-                    'files': [
-                        (BytesIO(test_file['content']), test_file['name']),
-                    ]
+                    'file_0': (BytesIO(test_file['content']), test_file['name']),
                 }
             ).status_code,
             400

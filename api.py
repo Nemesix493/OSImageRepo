@@ -38,7 +38,7 @@ def upload_post(resolved_dir_path: Path):
     if resolved_dir_path.exists():
         return jsonify({'error_message': 'try to POST on existing directory'}), 400
     makedirs(resolved_dir_path)
-    for file in request.files.getlist('files'):
+    for file in request.files.values():
         file.save(resolved_dir_path / secure_filename(file.filename))
     return jsonify({'message': 'Successfully added'}), 201
 
@@ -46,7 +46,7 @@ def upload_post(resolved_dir_path: Path):
 def upload_patch(resolved_dir_path: Path):
     if not resolved_dir_path.exists():
         return jsonify({'error_message': 'try to PATCH on not existing directory'}), 400
-    for file in request.files.getlist('files'):
+    for file in request.files.values():
         file_path = resolved_dir_path / secure_filename(file.filename)
         if file_path.exists():
             remove(file_path)
